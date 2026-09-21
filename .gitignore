@@ -1,0 +1,54 @@
+# Rebar3 build artifacts
+_build/
+_checkouts/
+_vendor/
+.rebar/
+.rebar3/
+rebar3.crashdump
+
+# Erlang artifacts
+ebin/
+*.beam
+*.o
+*.plt
+.erlang.cookie
+erl_crash.dump
+
+# ex_doc output
+doc/
+
+# Common Test logs
+logs/
+log/
+ct_logs/
+ct_run.*/
+
+# Cover data
+.eunit/
+cover/
+*.coverdata
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+.vscode/
+.elixir_ls/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Nix/direnv
+.direnv/
+.envrc
+flake.nix
+flake.lock
+result
+result-*
+
+# Temporary files
+*.tmp
+*.temp

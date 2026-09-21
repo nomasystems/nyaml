@@ -1,0 +1,18 @@
+{application, nyaml, [
+    {description, "Spec-compliant YAML 1.2 parser for Erlang/OTP"},
+    {vsn, "1.0.0"},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib
+    ]},
+    {env, []},
+    {modules, []},
+    {minimum_otp_vsn, "27"},
+    {licenses, ["Apache-2.0"]},
+    {maintainers, ["Nomasystems <info@nomasystems.com>"]},
+    {links, [
+        {"GitHub", "https://github.com/nomasystems/nyaml"},
+        {"Changelog", "https://github.com/nomasystems/nyaml/blob/main/CHANGELOG.md"}
+    ]}
+]}.
