@@ -33,7 +33,12 @@ which `nyaml:decode/2` reads back under `#{schema => extended}`.
 %%%-----------------------------------------------------------------------------
 %% TYPES
 %%%-----------------------------------------------------------------------------
--type kind() :: scalar | empty_list | empty_map | list | map.
+-type kind() ::
+    {scalar, nyaml_emit_scalar:scalar_value()}
+    | empty_list
+    | empty_map
+    | {list, [nyaml:yaml_value()]}
+    | {map, #{nyaml:yaml_value() => nyaml:yaml_value()}}.
 
 %%%-----------------------------------------------------------------------------
 %% API FUNCTIONS
@@ -55,11 +60,11 @@ Emits a YAML value at the given indentation level.
 emit(Value, Indent) ->
     Pad = pad(Indent),
     case classify(Value) of
-        scalar -> [Pad, nyaml_emit_scalar:emit(Value), $\n];
+        {scalar, Scalar} -> [Pad, nyaml_emit_scalar:emit(Scalar), $\n];
         empty_list -> [Pad, "[]\n"];
         empty_map -> [Pad, "{}\n"];
-        list -> emit_block_sequence(Value, Indent);
-        map -> emit_block_mapping(Value, Indent)
+        {list, List} -> emit_block_sequence(List, Indent);
+        {map, Map} -> emit_block_mapping(Map, Indent)
     end.
 
 %%%-----------------------------------------------------------------------------
@@ -68,20 +73,20 @@ emit(Value, Indent) ->
 
 -spec classify(nyaml:yaml_value()) -> kind().
 classify(null) ->
-    scalar;
+    {scalar, null};
 classify(true) ->
-    scalar;
+    {scalar, true};
 classify(false) ->
-    scalar;
+    {scalar, false};
 classify(infinity) ->
-    scalar;
+    {scalar, infinity};
 classify(negative_infinity) ->
-    scalar;
+    {scalar, negative_infinity};
 classify(nan) ->
-    scalar;
-classify(N) when is_number(N) -> scalar;
-classify({binary, B}) when is_binary(B) -> scalar;
-classify({{Y, Mo, D}, {H, Mi, S}}) when
+    {scalar, nan};
+classify(N) when is_number(N) -> {scalar, N};
+classify({binary, B} = Bin) when is_binary(B) -> {scalar, Bin};
+classify({{Y, Mo, D}, {H, Mi, S}} = DateTime) when
     is_integer(Y),
     is_integer(Mo),
     is_integer(D),
@@ -89,21 +94,21 @@ classify({{Y, Mo, D}, {H, Mi, S}}) when
     is_integer(Mi),
     is_integer(S)
 ->
-    scalar;
-classify(B) when is_binary(B) -> scalar;
+    {scalar, DateTime};
+classify(B) when is_binary(B) -> {scalar, B};
 classify([]) ->
     empty_list;
-classify(L) when is_list(L) -> list;
+classify(L) when is_list(L) -> {list, L};
 classify(M) when is_map(M), map_size(M) =:= 0 -> empty_map;
-classify(M) when is_map(M) -> map.
+classify(M) when is_map(M) -> {map, M}.
 -spec emit_after_colon(nyaml:yaml_value(), non_neg_integer()) -> iodata().
 emit_after_colon(Value, Indent) ->
     case classify(Value) of
-        scalar -> [$\s, nyaml_emit_scalar:emit(Value), $\n];
+        {scalar, Scalar} -> [$\s, nyaml_emit_scalar:emit(Scalar), $\n];
         empty_list -> <<" []\n">>;
         empty_map -> <<" {}\n">>;
-        list -> [$\n, emit_block_sequence(Value, Indent)];
-        map -> [$\n, emit_block_mapping(Value, Indent)]
+        {list, List} -> [$\n, emit_block_sequence(List, Indent)];
+        {map, Map} -> [$\n, emit_block_mapping(Map, Indent)]
     end.
 -spec emit_block_mapping(map(), non_neg_integer()) -> iolist().
 emit_block_mapping(Map, Indent) ->
@@ -135,25 +140,25 @@ emit_map_item(Key, Value, Indent) ->
 emit_seq_item(Item, Indent) ->
     Pad = pad(Indent),
     case classify(Item) of
-        scalar ->
-            [Pad, "- ", nyaml_emit_scalar:emit(Item), $\n];
+        {scalar, Scalar} ->
+            [Pad, "- ", nyaml_emit_scalar:emit(Scalar), $\n];
         empty_list ->
             [Pad, "- []\n"];
         empty_map ->
             [Pad, "- {}\n"];
-        list ->
-            [Pad, "-\n", emit_block_sequence(Item, Indent + 2)];
-        map ->
-            case is_simple_key(first_key(Item)) of
-                true -> [Pad, "- ", emit_compact_map(Item, Indent + 2)];
-                false -> [Pad, "-\n", emit_block_mapping(Item, Indent + 2)]
+        {list, List} ->
+            [Pad, "-\n", emit_block_sequence(List, Indent + 2)];
+        {map, Map} ->
+            case is_simple_key(first_key(Map)) of
+                true -> [Pad, "- ", emit_compact_map(Map, Indent + 2)];
+                false -> [Pad, "-\n", emit_block_mapping(Map, Indent + 2)]
             end
     end.
 
 -spec emit_simple_key(nyaml:yaml_value()) -> binary().
 emit_simple_key(Key) ->
     case classify(Key) of
-        scalar -> nyaml_emit_scalar:emit(Key);
+        {scalar, Scalar} -> nyaml_emit_scalar:emit(Scalar);
         empty_list -> <<"[]">>;
         empty_map -> <<"{}">>
     end.
@@ -167,7 +172,13 @@ first_key(Map) ->
 is_simple_key({binary, B}) when is_binary(B) ->
     false;
 is_simple_key(Key) ->
-    lists:member(classify(Key), [scalar, empty_list, empty_map]).
+    case classify(Key) of
+        {scalar, _} -> true;
+        empty_list -> true;
+        empty_map -> true;
+        {list, _} -> false;
+        {map, _} -> false
+    end.
 
 -spec pad(non_neg_integer()) -> binary().
 pad(0) -> <<>>;
