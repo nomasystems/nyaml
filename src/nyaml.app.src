@@ -1,6 +1,6 @@
 {application, nyaml, [
     {description, "Spec-compliant YAML 1.2 parser for Erlang/OTP"},
-    {vsn, "1.0.0"},
+    {vsn, "1.0.1"},
     {registered, []},
     {applications, [
         kernel,

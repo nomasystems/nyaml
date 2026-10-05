@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-10-05
+
+### Changed
+
+- `nyaml_emit` carries the classified value inside the kind tag. The scalar
+  emitter now receives a `scalar_value()` and not the whole
+  `nyaml:yaml_value()`, so the call matches its spec. The output of
+  `nyaml:encode/1` does not change.
+
 ## [1.0.0] - 2026-09-21
 
 Initial public release.
